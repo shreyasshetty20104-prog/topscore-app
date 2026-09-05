@@ -1,0 +1,17 @@
+{
+  "name": "topscore-server",
+  "version": "1.0.0",
+  "description": "Backend for the topscore game leaderboard — real shared leaderboard + UPI bid approval.",
+  "main": "server.js",
+  "type": "commonjs",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.19.2",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "better-sqlite3": "^11.1.2"
+  }
+}
