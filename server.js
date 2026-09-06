@@ -56,6 +56,13 @@ db.exec(`
     upi_txn_id TEXT PRIMARY KEY,
     approved_at TEXT DEFAULT CURRENT_TIMESTAMP
   );
+
+  -- One row per page load of the site (not API calls). Lets you see how
+  -- many people have actually visited, and how many today.
+  CREATE TABLE IF NOT EXISTS visits (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    visited_at TEXT DEFAULT CURRENT_TIMESTAMP
+  );
 `);
 
 // Seed a couple of rows the first time this runs, so the board isn't empty.
@@ -127,6 +134,13 @@ app.use(express.json({ limit: '1mb' })); // caps request size overall too
 // Serves the frontend from this same server — one deploy, one free
 // Render service. admin.html is deliberately NOT in here — it's served
 // below through a route that requires a real login first.
+//
+// Logs a visit each time someone loads the homepage itself (not every
+// asset or API call), then falls through to actually serving the file.
+app.get('/', (req, res, next) => {
+  db.prepare('INSERT INTO visits DEFAULT VALUES').run();
+  next();
+});
 app.use(express.static('public'));
 
 // Real username/password login (HTTP Basic Auth) — the browser itself
@@ -192,6 +206,15 @@ app.post('/api/bids', (req, res) => {
   ).run(gameName, category, link, logo, Math.round(amount), upiTxnId, ip);
 
   res.json({ status: 'pending' });
+});
+
+// ---------- Admin: visit stats ----------
+app.get('/api/stats', requireAdmin, (req, res) => {
+  const total = db.prepare('SELECT COUNT(*) AS n FROM visits').get().n;
+  const today = db.prepare(
+    `SELECT COUNT(*) AS n FROM visits WHERE date(visited_at) = date('now')`
+  ).get().n;
+  res.json({ total, today });
 });
 
 // ---------- Admin: list bids waiting for review ----------
